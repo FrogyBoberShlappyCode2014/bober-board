@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Боброва Дошка Оголошень - З API!</title>
+    <title>Боброва Дошка Оголошень - З Google Sheets API!</title>
     <style>
         body {
             font-family: 'Comic Sans MS', cursive, sans-serif; /* Мемний шрифт */
-            background-color: #f0f8ff; /* Колір неба */
+            background-color: #f0f8ff;
             color: #333;
             text-align: center;
             padding: 20px;
@@ -21,7 +21,7 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         h1 {
-            color: #8A2BE2; /* Фіолетовий */
+            color: #8A2BE2;
             font-size: 2.5rem;
             text-shadow: 2px 2px #ccc;
         }
@@ -37,7 +37,7 @@
             border: 2px solid #8A2BE2;
             border-radius: 5px;
             box-sizing: border-box;
-            font-family: 'Comic Sans MS', cursive, sans-serif; /* Мемний шрифт */
+            font-family: 'Comic Sans MS', cursive, sans-serif;
         }
         .message-button {
             padding: 10px 20px;
@@ -47,7 +47,7 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
-            font-family: 'Comic Sans MS', cursive, sans-serif; /* Мемний шрифт */
+            font-family: 'Comic Sans MS', cursive, sans-serif;
         }
         .message-button:hover {
             background-color: #6A0DAD;
@@ -58,13 +58,13 @@
             text-align: left;
         }
         .message-item {
-            background-color: #e6e6fa; /* Світло-фіолетовий */
+            background-color: #e6e6fa;
             padding: 15px;
             margin-bottom: 10px;
             border-left: 5px solid #8A2BE2;
             border-radius: 5px;
-            word-wrap: break-word; /* Перенесення довгих слів */
-            font-family: 'Comic Sans MS', cursive, sans-serif; /* Мемний шрифт */
+            word-wrap: break-word;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
         }
     </style>
 </head>
@@ -83,21 +83,33 @@
     </div>
 
     <script>
+        const apiEndpoint = 'https://script.google.com/macros/s/1Afaumqqwm_gWmP8pTPZObISRr8FE8sUj45bs1H0WQRKxzMaihGiR0TMs/exec';
+        
         const messageInput = document.getElementById('messageInput');
         const messagesList = document.getElementById('messagesList');
-        const localStorageKey = 'bober-messages';
 
-        // Функція для завантаження повідомлень з локального сховища
-        function loadMessages() {
-            const messages = JSON.parse(localStorage.getItem(localStorageKey)) || [];
-            messages.forEach(message => displayMessage(message));
+        // Функція для завантаження повідомлень з Google Sheets
+        async function loadMessages() {
+            try {
+                const response = await fetch(apiEndpoint);
+                const messages = await response.json();
+                messagesList.innerHTML = '';
+                messages.reverse().forEach(message => displayMessage(message));
+            } catch (error) {
+                console.error('Помилка завантаження повідомлень:', error);
+            }
         }
 
-        // Функція для збереження повідомлень у локальне сховище
-        function saveMessage(messageText) {
-            const messages = JSON.parse(localStorage.getItem(localStorageKey)) || [];
-            messages.unshift(messageText); /* Додаємо на початок */
-            localStorage.setItem(localStorageKey, JSON.stringify(messages));
+        // Функція для відправки повідомлення в Google Sheets
+        async function saveMessage(messageText) {
+            try {
+                await fetch(apiEndpoint, {
+                    method: 'POST',
+                    body: messageText
+                });
+            } catch (error) {
+                console.error('Помилка відправки повідомлення:', error);
+            }
         }
 
         // Функція для відображення повідомлення на сторінці
@@ -105,18 +117,18 @@
             const messageItem = document.createElement('li');
             messageItem.className = 'message-item';
             messageItem.textContent = messageText;
-            messagesList.prepend(messageItem);
+            messagesList.append(messageItem);
         }
 
         // Функція для додавання нового повідомлення
-        function addMessage() {
+        async function addMessage() {
             const messageText = messageInput.value.trim();
             if (messageText === '') {
                 return;
             }
-            saveMessage(messageText);
-            displayMessage(messageText);
+            await saveMessage(messageText);
             messageInput.value = '';
+            loadMessages();
         }
 
         // Завантажуємо повідомлення при завантаженні сторінки
