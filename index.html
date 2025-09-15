@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Боброва Дошка Оголошень - З Ідентифікацією!</title>
+    <title>Боброва Дошка Оголошень - Живий Чат!</title>
     <style>
         body {
             font-family: 'Comic Sans MS', cursive, sans-serif;
@@ -157,7 +157,6 @@
             return result;
         }
 
-        // Зберігаємо нік та ID у локальному сховищі
         nicknameInput.value = localStorage.getItem(nicknameKey) || '';
         idInput.value = localStorage.getItem(idKey) || generateUniqueId();
 
@@ -180,7 +179,7 @@
                     const nickname = messageParts[0] || 'Анонімний бобер';
                     const id = messageParts[1] || 'Немає ID';
                     const messageText = messageParts[2] || '';
-
+                    
                     if (messageText.startsWith('[Взято]')) {
                         displayTakenMessage(nickname, id, messageText.substring(7).trim());
                     } else {
@@ -202,7 +201,7 @@
                 console.error('Помилка відправки повідомлення:', error);
             }
         }
-
+        
         async function updateMessageStatus(nickname, id, messageText) {
             await saveMessage(`${nickname}:::${id}:::[Взято] ${messageText}`);
         }
@@ -241,9 +240,14 @@
             const fullMessage = `${nickname}:::${id}:::${messageText}`;
             await saveMessage(fullMessage);
             messageInput.value = '';
+            // Після відправки одразу оновлюємо, щоб побачити свій пост
             loadMessages();
         }
+        
+        // Автоматичне оновлення кожні 5 секунд
+        setInterval(loadMessages, 5000);
 
+        // Завантажуємо повідомлення при завантаженні сторінки
         window.onload = loadMessages;
     </script>
 </body>
