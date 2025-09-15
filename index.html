@@ -321,16 +321,14 @@
             alert(`Ваш новий мемний нік: ${generatedNick}`);
         }
         
-        // Оновлена функція для генерації пароля
         function generatePassword() {
             const words = ['Ква', 'Кряк', 'Гризь', 'Бобер', 'Шляпа', 'Кава', 'Мем', 'Жаба', 'Логін'];
             const part1 = words[Math.floor(Math.random() * words.length)];
-            const part2 = Math.floor(Math.random() * 9000) + 1000; // 4-значне число
+            const part2 = Math.floor(Math.random() * 9000) + 1000;
             const part3 = words[Math.floor(Math.random() * words.length)];
 
             let password = `${part1}${part2}${part3}`;
 
-            // Заміна букв на "мемні" символи
             password = password.replace(/о/g, '0').replace(/О/g, '0');
             password = password.replace(/е/g, '3').replace(/Е/g, '3');
             password = password.replace(/і/g, '1').replace(/І/g, '1');
