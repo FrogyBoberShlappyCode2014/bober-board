@@ -12,7 +12,7 @@
             text-align: center;
             padding: 20px;
         }
-        .auth-container {
+        .auth-container, .register-container {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -40,6 +40,7 @@
             border-radius: 5px;
             cursor: pointer;
             font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin-bottom: 10px;
         }
         .main-content {
             display: none;
@@ -146,10 +147,18 @@
 <body>
     <div id="authContainer" class="auth-container">
         <h2>🐸 Вхід для бобрів 🦫</h2>
-        <input type="password" id="passwordInput" class="auth-input" placeholder="Введіть пароль (bober або quack)">
-        <input type="text" id="authNicknameInput" class="auth-input" placeholder="Введіть ваш нік">
-        <input type="text" id="otpInput" class="auth-input" placeholder="Введіть ваш OTP">
+        <input type="text" id="loginNicknameInput" class="auth-input" placeholder="Введіть ваш нік">
+        <input type="password" id="loginPasswordInput" class="auth-input" placeholder="Введіть ваш пароль">
         <button class="auth-button" onclick="login()">Увійти!</button>
+        <button class="auth-button" onclick="showRegister()">Зареєструватися</button>
+    </div>
+
+    <div id="registerContainer" class="register-container" style="display: none;">
+        <h2>📝 Реєстрація бобра 🦫</h2>
+        <input type="text" id="registerNicknameInput" class="auth-input" placeholder="Придумайте нік">
+        <input type="password" id="registerPasswordInput" class="auth-input" placeholder="Придумайте пароль">
+        <button class="auth-button" onclick="register()">Зареєструватися</button>
+        <button class="auth-button" onclick="showLogin()">Повернутися до входу</button>
     </div>
 
     <div id="mainContent" class="main-content">
@@ -189,15 +198,17 @@
         const nicknameInput = document.getElementById('nicknameInput');
         const idInput = document.getElementById('idInput');
         const authContainer = document.getElementById('authContainer');
+        const registerContainer = document.getElementById('registerContainer');
         const mainContent = document.getElementById('mainContent');
-        const passwordInput = document.getElementById('passwordInput');
-        const authNicknameInput = document.getElementById('authNicknameInput');
-        const otpInput = document.getElementById('otpInput');
+        const loginNicknameInput = document.getElementById('loginNicknameInput');
+        const loginPasswordInput = document.getElementById('loginPasswordInput');
+        const registerNicknameInput = document.getElementById('registerNicknameInput');
+        const registerPasswordInput = document.getElementById('registerPasswordInput');
 
         const nicknameKey = 'bober-nickname';
         const idKey = 'bober-id';
         const loggedInKey = 'bober-loggedIn';
-        const currentOTP = '12345';
+        const currentOTP = '12345'; // OTP залишився, але тепер він використовується в логіці "бобра", а не на вхідній формі.
 
         function b64EncodeUnicode(str) {
             return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
@@ -212,26 +223,73 @@
             const salt = 'B0BR';
             return `M3M3${salt}${encodedNickname}${dateCode}`;
         }
+        
+        async function register() {
+            const nickname = registerNicknameInput.value.trim();
+            const password = registerPasswordInput.value.trim();
 
-        function login() {
-            const password = passwordInput.value;
-            const nickname = authNicknameInput.value.trim();
-            const otp = otpInput.value;
-
-            if ((password === 'bober' || password === 'quack') && nickname !== '' && otp === currentOTP) {
-                localStorage.setItem(loggedInKey, 'true');
-                localStorage.setItem(nicknameKey, nickname);
-                if (!localStorage.getItem(idKey)) {
-                    localStorage.setItem(idKey, generateFixedId(nickname));
-                }
-                authContainer.style.display = 'none';
-                mainContent.style.display = 'block';
-                nicknameInput.value = localStorage.getItem(nicknameKey);
-                idInput.value = localStorage.getItem(idKey);
-                startChat();
-            } else {
-                alert("Неправильний пароль, нік або OTP! Це не «мемно»!");
+            if (nickname === '' || password === '') {
+                alert("Нік та пароль не можуть бути порожніми! Це не «мемно»!");
+                return;
             }
+
+            try {
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'register', nickname, password })
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert("Реєстрація успішна! Тепер увійдіть.");
+                    showLogin();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error('Помилка реєстрації:', error);
+                alert("Помилка реєстрації. Спробуйте ще раз.");
+            }
+        }
+
+        async function login() {
+            const nickname = loginNicknameInput.value.trim();
+            const password = loginPasswordInput.value.trim();
+
+            try {
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'login', nickname, password })
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    localStorage.setItem(loggedInKey, 'true');
+                    localStorage.setItem(nicknameKey, nickname);
+                    if (!localStorage.getItem(idKey)) {
+                        localStorage.setItem(idKey, generateFixedId(nickname));
+                    }
+                    authContainer.style.display = 'none';
+                    mainContent.style.display = 'block';
+                    nicknameInput.value = localStorage.getItem(nicknameKey);
+                    idInput.value = localStorage.getItem(idKey);
+                    startChat();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error('Помилка входу:', error);
+                alert("Помилка входу. Спробуйте ще раз.");
+            }
+        }
+
+        function showRegister() {
+            authContainer.style.display = 'none';
+            registerContainer.style.display = 'flex';
+        }
+
+        function showLogin() {
+            registerContainer.style.display = 'none';
+            authContainer.style.display = 'flex';
         }
 
         function forgotId() {
