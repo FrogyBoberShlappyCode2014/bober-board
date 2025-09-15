@@ -149,6 +149,8 @@
         <h2>🐸 Вхід для бобрів 🦫</h2>
         <input type="text" id="loginNicknameInput" class="auth-input" placeholder="Введіть ваш нік">
         <input type="password" id="loginPasswordInput" class="auth-input" placeholder="Введіть ваш пароль">
+        <input type="text" id="otpInput" class="auth-input" placeholder="Введіть ваш OTP">
+        <button class="auth-button" onclick="generateOTP()">Згенерувати OTP</button>
         <button class="auth-button" onclick="login()">Увійти!</button>
         <button class="auth-button" onclick="showRegister()">Зареєструватися</button>
     </div>
@@ -156,9 +158,10 @@
     <div id="registerContainer" class="register-container" style="display: none;">
         <h2>📝 Реєстрація бобра 🦫</h2>
         <input type="text" id="registerNicknameInput" class="auth-input" placeholder="Придумайте нік">
-        <input type="password" id="registerPasswordInput" class="auth-input" placeholder="Придумайте пароль">
         <input type="text" id="llmPromptInput" class="auth-input" placeholder="Введіть побажання для ніка (наприклад: 'мемний', 'про бобрів')">
         <button class="auth-button" onclick="generateNickname()">Згенерувати нік</button>
+        <input type="password" id="registerPasswordInput" class="auth-input" placeholder="Придумайте пароль">
+        <button class="auth-button" onclick="generatePassword()">Згенерувати пароль</button>
         <button class="auth-button" onclick="register()">Зареєструватися</button>
         <button class="auth-button" onclick="showLogin()">Повернутися до входу</button>
     </div>
@@ -207,11 +210,12 @@
         const registerNicknameInput = document.getElementById('registerNicknameInput');
         const registerPasswordInput = document.getElementById('registerPasswordInput');
         const llmPromptInput = document.getElementById('llmPromptInput');
+        const otpInput = document.getElementById('otpInput');
 
         const nicknameKey = 'bober-nickname';
         const idKey = 'bober-id';
         const loggedInKey = 'bober-loggedIn';
-        const currentOTP = '12345'; // OTP для "мемної" безпеки
+        let currentOTP = '';
 
         function b64EncodeUnicode(str) {
             return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
@@ -237,7 +241,6 @@
             }
 
             try {
-                // Відправляємо дані на бекенд для реєстрації
                 const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'register', nickname, password })
@@ -258,9 +261,14 @@
         async function login() {
             const nickname = loginNicknameInput.value.trim();
             const password = loginPasswordInput.value.trim();
+            const otp = otpInput.value;
+
+            if (otp !== currentOTP) {
+                alert("Неправильний OTP! Це не «мемно»!");
+                return;
+            }
 
             try {
-                // Відправляємо дані на бекенд для входу
                 const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'login', nickname, password })
@@ -287,7 +295,6 @@
             }
         }
 
-        // Нова функція для симуляції генерації ніка LLM
         async function generateNickname() {
             const prompt = llmPromptInput.value.trim();
             if (prompt === '') {
@@ -295,7 +302,6 @@
                 return;
             }
 
-            // Це імітація роботи LLM. В реальності тут має бути запит до API.
             const keywords = prompt.toLowerCase().split(' ').filter(word => word.length > 2);
             let generatedNick;
 
@@ -313,6 +319,43 @@
             
             registerNicknameInput.value = generatedNick;
             alert(`Ваш новий мемний нік: ${generatedNick}`);
+        }
+        
+        // Оновлена функція для генерації пароля
+        function generatePassword() {
+            const words = ['Ква', 'Кряк', 'Гризь', 'Бобер', 'Шляпа', 'Кава', 'Мем', 'Жаба', 'Логін'];
+            const part1 = words[Math.floor(Math.random() * words.length)];
+            const part2 = Math.floor(Math.random() * 9000) + 1000; // 4-значне число
+            const part3 = words[Math.floor(Math.random() * words.length)];
+
+            let password = `${part1}${part2}${part3}`;
+
+            // Заміна букв на "мемні" символи
+            password = password.replace(/о/g, '0').replace(/О/g, '0');
+            password = password.replace(/е/g, '3').replace(/Е/g, '3');
+            password = password.replace(/і/g, '1').replace(/І/g, '1');
+            password = password.replace(/а/g, '4').replace(/А/g, '4');
+            password = password.replace(/с/g, '$').replace(/С/g, '$');
+            password = password.replace(/у/g, 'Y').replace(/У/g, 'Y');
+            
+            registerPasswordInput.value = password;
+            alert(`Ваш новий «мемний» пароль: ${password}`);
+        }
+
+        function generateOTP() {
+            const length = 5;
+            const chars = '0123456789';
+            let otp = '';
+            for (let i = 0; i < length; i++) {
+                otp += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            currentOTP = otp;
+            alert(`Ваш новий «мемний» OTP: ${otp}. Він дійсний 5 хвилин!`);
+            
+            setTimeout(() => {
+                currentOTP = '';
+                alert("OTP застарів! Згенеруйте новий.");
+            }, 300000);
         }
 
         function showRegister() {
