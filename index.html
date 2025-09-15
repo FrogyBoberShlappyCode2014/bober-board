@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Боброва Дошка Оголошень</title>
+    <title>Боброва Дошка Оголошень - З API!</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Comic Sans MS', cursive, sans-serif; /* Мемний шрифт */
             background-color: #f0f8ff; /* Колір неба */
             color: #333;
             text-align: center;
@@ -37,6 +37,7 @@
             border: 2px solid #8A2BE2;
             border-radius: 5px;
             box-sizing: border-box;
+            font-family: 'Comic Sans MS', cursive, sans-serif; /* Мемний шрифт */
         }
         .message-button {
             padding: 10px 20px;
@@ -46,6 +47,7 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
+            font-family: 'Comic Sans MS', cursive, sans-serif; /* Мемний шрифт */
         }
         .message-button:hover {
             background-color: #6A0DAD;
@@ -62,6 +64,7 @@
             border-left: 5px solid #8A2BE2;
             border-radius: 5px;
             word-wrap: break-word; /* Перенесення довгих слів */
+            font-family: 'Comic Sans MS', cursive, sans-serif; /* Мемний шрифт */
         }
     </style>
 </head>
@@ -82,22 +85,42 @@
     <script>
         const messageInput = document.getElementById('messageInput');
         const messagesList = document.getElementById('messagesList');
+        const localStorageKey = 'bober-messages';
 
-        // Функція для додавання повідомлення
+        // Функція для завантаження повідомлень з локального сховища
+        function loadMessages() {
+            const messages = JSON.parse(localStorage.getItem(localStorageKey)) || [];
+            messages.forEach(message => displayMessage(message));
+        }
+
+        // Функція для збереження повідомлень у локальне сховище
+        function saveMessage(messageText) {
+            const messages = JSON.parse(localStorage.getItem(localStorageKey)) || [];
+            messages.unshift(messageText); /* Додаємо на початок */
+            localStorage.setItem(localStorageKey, JSON.stringify(messages));
+        }
+
+        // Функція для відображення повідомлення на сторінці
+        function displayMessage(messageText) {
+            const messageItem = document.createElement('li');
+            messageItem.className = 'message-item';
+            messageItem.textContent = messageText;
+            messagesList.prepend(messageItem);
+        }
+
+        // Функція для додавання нового повідомлення
         function addMessage() {
             const messageText = messageInput.value.trim();
             if (messageText === '') {
                 return;
             }
-
-            const messageItem = document.createElement('li');
-            messageItem.className = 'message-item';
-            messageItem.textContent = messageText;
-
-            messagesList.prepend(messageItem); /* Додаємо вгору списку */
-
-            messageInput.value = ''; /* Очищаємо поле вводу */
+            saveMessage(messageText);
+            displayMessage(messageText);
+            messageInput.value = '';
         }
+
+        // Завантажуємо повідомлення при завантаженні сторінки
+        window.onload = loadMessages;
     </script>
 </body>
 </html>
