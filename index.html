@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Боброва Дошка Оголошень - З Google Sheets API!</title>
+    <title>Боброва Дошка Оголошень - З Ідентифікацією!</title>
     <style>
         body {
-            font-family: 'Comic Sans MS', cursive, sans-serif; /* Мемний шрифт */
+            font-family: 'Comic Sans MS', cursive, sans-serif;
             background-color: #f0f8ff;
             color: #333;
             text-align: center;
@@ -25,19 +25,21 @@
             font-size: 2.5rem;
             text-shadow: 2px 2px #ccc;
         }
-        .message-form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .form-section {
             margin-bottom: 20px;
         }
-        .message-input {
+        .form-section input, .message-input {
             width: 100%;
             padding: 10px;
             border: 2px solid #8A2BE2;
             border-radius: 5px;
             box-sizing: border-box;
             font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+        .message-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
         .message-button {
             padding: 10px 20px;
@@ -52,12 +54,27 @@
         .message-button:hover {
             background-color: #6A0DAD;
         }
-        .messages-list {
-            list-style-type: none;
-            padding: 0;
+        .messages-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .messages-column {
+            flex: 1;
+            text-align: left;
+            border-right: 2px dashed #8A2BE2;
+            padding-right: 20px;
+        }
+        .taken-column {
+            flex: 1;
             text-align: left;
         }
-        .message-item {
+        .messages-list, .taken-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .message-item, .taken-item {
             background-color: #e6e6fa;
             padding: 15px;
             margin-bottom: 10px;
@@ -65,6 +82,31 @@
             border-radius: 5px;
             word-wrap: break-word;
             font-family: 'Comic Sans MS', cursive, sans-serif;
+            position: relative;
+        }
+        .taken-item {
+            background-color: #d3f3d3;
+            border-left: 5px solid #00a000;
+        }
+        .take-button {
+            float: right;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .nickname {
+            font-weight: bold;
+            color: #4B0082;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .user-id {
+            font-size: 0.7rem;
+            color: #777;
         }
     </style>
 </head>
@@ -73,65 +115,135 @@
         <h1>🐸 Боброва Дошка Оголошень 🦫</h1>
         <p>Місце, де бобри діляться своїми "шляпними" ідеями!</p>
 
+        <div class="form-section">
+            <input type="text" id="nicknameInput" placeholder="Введіть ваш нік (або Skype ID), бобре...">
+            <input type="text" id="idInput" placeholder="Введіть ваш унікальний ID (опціонально)">
+        </div>
+
         <div class="message-form">
             <textarea id="messageInput" class="message-input" rows="4" placeholder="Напиши своє "шляпне" оголошення..."></textarea>
             <button class="message-button" onclick="addMessage()">Надіслати</button>
         </div>
 
-        <ul id="messagesList" class="messages-list">
-            </ul>
+        <div class="messages-container">
+            <div class="messages-column">
+                <h2>📜 Оголошення</h2>
+                <ul id="messagesList" class="messages-list"></ul>
+            </div>
+            <div class="taken-column">
+                <h2>✅ Взято</h2>
+                <ul id="takenList" class="taken-list"></ul>
+            </div>
+        </div>
     </div>
 
     <script>
         const apiEndpoint = 'https://script.google.com/macros/s/1Afaumqqwm_gWmP8pTPZObISRr8FE8sUj45bs1H0WQRKxzMaihGiR0TMs/exec';
-        
         const messageInput = document.getElementById('messageInput');
         const messagesList = document.getElementById('messagesList');
+        const takenList = document.getElementById('takenList');
+        const nicknameInput = document.getElementById('nicknameInput');
+        const idInput = document.getElementById('idInput');
 
-        // Функція для завантаження повідомлень з Google Sheets
+        const nicknameKey = 'bober-nickname';
+        const idKey = 'bober-id';
+
+        function generateUniqueId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < 20; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        // Зберігаємо нік та ID у локальному сховищі
+        nicknameInput.value = localStorage.getItem(nicknameKey) || '';
+        idInput.value = localStorage.getItem(idKey) || generateUniqueId();
+
+        nicknameInput.addEventListener('input', () => {
+            localStorage.setItem(nicknameKey, nicknameInput.value);
+        });
+
+        idInput.addEventListener('input', () => {
+            localStorage.setItem(idKey, idInput.value);
+        });
+
         async function loadMessages() {
             try {
                 const response = await fetch(apiEndpoint);
-                const messages = await response.json();
+                const data = await response.json();
                 messagesList.innerHTML = '';
-                messages.reverse().forEach(message => displayMessage(message));
+                takenList.innerHTML = '';
+                data.reverse().forEach(fullMessage => {
+                    const messageParts = fullMessage.split(':::');
+                    const nickname = messageParts[0] || 'Анонімний бобер';
+                    const id = messageParts[1] || 'Немає ID';
+                    const messageText = messageParts[2] || '';
+
+                    if (messageText.startsWith('[Взято]')) {
+                        displayTakenMessage(nickname, id, messageText.substring(7).trim());
+                    } else {
+                        displayMessage(nickname, id, messageText);
+                    }
+                });
             } catch (error) {
                 console.error('Помилка завантаження повідомлень:', error);
             }
         }
 
-        // Функція для відправки повідомлення в Google Sheets
-        async function saveMessage(messageText) {
+        async function saveMessage(fullMessage) {
             try {
                 await fetch(apiEndpoint, {
                     method: 'POST',
-                    body: messageText
+                    body: fullMessage
                 });
             } catch (error) {
                 console.error('Помилка відправки повідомлення:', error);
             }
         }
 
-        // Функція для відображення повідомлення на сторінці
-        function displayMessage(messageText) {
+        async function updateMessageStatus(nickname, id, messageText) {
+            await saveMessage(`${nickname}:::${id}:::[Взято] ${messageText}`);
+        }
+
+        function displayMessage(nickname, id, messageText) {
             const messageItem = document.createElement('li');
             messageItem.className = 'message-item';
-            messageItem.textContent = messageText;
+            messageItem.innerHTML = `<span class="nickname">${nickname}</span> <span class="user-id">(${id})</span>: ${messageText} <button class="take-button" onclick="takeMessage(this)">Взяти</button>`;
             messagesList.append(messageItem);
         }
 
-        // Функція для додавання нового повідомлення
+        function displayTakenMessage(nickname, id, messageText) {
+            const takenItem = document.createElement('li');
+            takenItem.className = 'taken-item';
+            takenItem.innerHTML = `<span class="nickname">${nickname}</span> <span class="user-id">(${id})</span>: ${messageText}`;
+            takenList.append(takenItem);
+        }
+
+        async function takeMessage(button) {
+            const parent = button.parentNode;
+            const nickname = parent.querySelector('.nickname').textContent;
+            const id = parent.querySelector('.user-id').textContent.replace('(', '').replace(')', '');
+            const messageText = parent.textContent.split(':').slice(1).join(':').replace('Взяти', '').trim();
+            
+            await updateMessageStatus(nickname, id, messageText);
+            loadMessages();
+        }
+
         async function addMessage() {
+            const nickname = nicknameInput.value.trim() || 'Анонімний бобер';
+            const id = idInput.value.trim() || generateUniqueId();
             const messageText = messageInput.value.trim();
             if (messageText === '') {
                 return;
             }
-            await saveMessage(messageText);
+            const fullMessage = `${nickname}:::${id}:::${messageText}`;
+            await saveMessage(fullMessage);
             messageInput.value = '';
             loadMessages();
         }
 
-        // Завантажуємо повідомлення при завантаженні сторінки
         window.onload = loadMessages;
     </script>
 </body>
