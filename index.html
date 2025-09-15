@@ -157,6 +157,8 @@
         <h2>📝 Реєстрація бобра 🦫</h2>
         <input type="text" id="registerNicknameInput" class="auth-input" placeholder="Придумайте нік">
         <input type="password" id="registerPasswordInput" class="auth-input" placeholder="Придумайте пароль">
+        <input type="text" id="llmPromptInput" class="auth-input" placeholder="Введіть побажання для ніка (наприклад: 'мемний', 'про бобрів')">
+        <button class="auth-button" onclick="generateNickname()">Згенерувати нік</button>
         <button class="auth-button" onclick="register()">Зареєструватися</button>
         <button class="auth-button" onclick="showLogin()">Повернутися до входу</button>
     </div>
@@ -204,11 +206,12 @@
         const loginPasswordInput = document.getElementById('loginPasswordInput');
         const registerNicknameInput = document.getElementById('registerNicknameInput');
         const registerPasswordInput = document.getElementById('registerPasswordInput');
+        const llmPromptInput = document.getElementById('llmPromptInput');
 
         const nicknameKey = 'bober-nickname';
         const idKey = 'bober-id';
         const loggedInKey = 'bober-loggedIn';
-        const currentOTP = '12345'; // OTP залишився, але тепер він використовується в логіці "бобра", а не на вхідній формі.
+        const currentOTP = '12345'; // OTP для "мемної" безпеки
 
         function b64EncodeUnicode(str) {
             return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
@@ -234,6 +237,7 @@
             }
 
             try {
+                // Відправляємо дані на бекенд для реєстрації
                 const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'register', nickname, password })
@@ -256,6 +260,7 @@
             const password = loginPasswordInput.value.trim();
 
             try {
+                // Відправляємо дані на бекенд для входу
                 const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'login', nickname, password })
@@ -280,6 +285,34 @@
                 console.error('Помилка входу:', error);
                 alert("Помилка входу. Спробуйте ще раз.");
             }
+        }
+
+        // Нова функція для симуляції генерації ніка LLM
+        async function generateNickname() {
+            const prompt = llmPromptInput.value.trim();
+            if (prompt === '') {
+                alert("Введіть щось для генерації ніка!");
+                return;
+            }
+
+            // Це імітація роботи LLM. В реальності тут має бути запит до API.
+            const keywords = prompt.toLowerCase().split(' ').filter(word => word.length > 2);
+            let generatedNick;
+
+            if (keywords.includes('бобер') || keywords.includes('гребля')) {
+                generatedNick = "Бобровий_Король_3000";
+            } else if (keywords.includes('мемний') || keywords.includes('мем')) {
+                generatedNick = "Качка_Кряк_Квадрат";
+            } else if (keywords.includes('хакер') || keywords.includes('кодер')) {
+                generatedNick = "Шифр_Бобра_1337";
+            } else if (keywords.includes('кава')) {
+                generatedNick = "Кавовий_Бобер";
+            } else {
+                generatedNick = "Шляпний_Генератор_Ніків";
+            }
+            
+            registerNicknameInput.value = generatedNick;
+            alert(`Ваш новий мемний нік: ${generatedNick}`);
         }
 
         function showRegister() {
